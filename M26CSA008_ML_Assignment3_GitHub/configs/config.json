@@ -1,0 +1,64 @@
+{
+  "assignment": "ML Assignment 3 - CIFAR10",
+  "name": "Sneha Sah",
+  "roll_number": "M26CSA008",
+  "seed": 26008,
+  "smoke_test": false,
+  "dataset": "CIFAR10",
+  "split": {
+    "train": 45000,
+    "validation": 5000,
+    "test": 10000,
+    "stratified": true
+  },
+  "training": {
+    "classifier_epochs": 30,
+    "memorisation_epochs": 150,
+    "autoencoder_epochs": 30,
+    "linear_probe_epochs": 30,
+    "batch_size": 128,
+    "optimizer": "AdamW",
+    "learning_rate": 0.001,
+    "weight_decay": 0.0001,
+    "scheduler": "CosineAnnealingLR",
+    "augmentation": "none"
+  },
+  "model_selection": "validation set only; official test set used for final reporting",
+  "other": {
+    "mlp_hidden": 256,
+    "memorisation_hidden": 1024,
+    "memorisation_subset": 10000,
+    "autoencoder_bottlenecks": [
+      32,
+      128,
+      512
+    ],
+    "gaussian_noise_sigma": 0.2,
+    "svm_subset": 6000,
+    "svm_C": [
+      0.01,
+      0.1,
+      1,
+      10,
+      100
+    ],
+    "clustering_k": [
+      5,
+      8,
+      10,
+      12,
+      15,
+      20
+    ],
+    "svm_max_iter": 200000
+  },
+  "versions_observed_in_notebook": {
+    "torch": "2.14.1+cu130",
+    "torchvision": "0.29.1+cu130",
+    "numpy": "2.4.6",
+    "scikit-learn": "1.6.1",
+    "pandas": "not recorded in visible notebook output",
+    "matplotlib": "not recorded in visible notebook output",
+    "scipy": "not recorded in visible notebook output"
+  }
+}

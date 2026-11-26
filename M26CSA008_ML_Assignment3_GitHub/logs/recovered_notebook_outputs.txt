@@ -1,0 +1,570 @@
+
+===== Notebook cell 1 =====
+Roll no: M26CSA008 | seed: 26008 | smoke test: False
+Device: cuda | Tesla T4
+torch 2.14.1+cu130 | torchvision 0.29.1+cu130 | numpy 2.4.6 | sklearn 1.6.1
+
+
+===== Notebook cell 2 =====
+100%|██████████| 170M/170M [11:36<00:00, 245kB/s]
+
+
+===== Notebook cell 2 =====
+train (45000, 3, 32, 32) | val (5000, 3, 32, 32) | test (10000, 3, 32, 32)
+train class counts: [4500, 4500, 4500, 4500, 4500, 4500, 4500, 4500, 4500, 4500]
+val class counts:   [500, 500, 500, 500, 500, 500, 500, 500, 500, 500]
+MEAN [0.4911 0.482  0.4461] STD [0.247  0.2434 0.2615]
+
+
+===== Notebook cell 4 =====
+
+FAIRNESS CRITERION (fixed before any experiment is run)
+ 1. same data: same 45000/5000 split, same inputs scaling, no augmentation for any model
+ 2. same optimiser and budget: AdamW (lr 1e-3, wd 1e-4), cosine schedule, batch 128, same number of epochs
+ 3. same normalisation layers: BatchNorm in both the MLP and the CNN, ReLU everywhere
+ 4. parameter budget: the CNN's parameter count must be within 10% of the MLP's
+ 5. model selection: best-validation-accuracy checkpoint only; test set touched only for the final report
+
+MLP-small : hidden 256  -> 856,074 params
+CNN       : width  77  -> 854,094 params  (-0.2% from MLP-small)
+MLP-large : hidden 864  -> 3,414,538 params  (4.0x MLP-small)
+
+
+===== Notebook cell 6 =====
+--- training Q1a_MLP_small | parameters = 856,074
+  [Q1a_MLP_small] epoch   1/30 | train acc 0.5059 | val acc 0.4750 | val loss 1.4751 | 1s
+  [Q1a_MLP_small] epoch   5/30 | train acc 0.6396 | val acc 0.5278 | val loss 1.3363 | 4s
+  [Q1a_MLP_small] epoch  10/30 | train acc 0.7747 | val acc 0.5622 | val loss 1.3465 | 8s
+  [Q1a_MLP_small] epoch  15/30 | train acc 0.8862 | val acc 0.5522 | val loss 1.5318 | 12s
+  [Q1a_MLP_small] epoch  20/30 | train acc 0.9534 | val acc 0.5474 | val loss 1.7197 | 15s
+  [Q1a_MLP_small] epoch  25/30 | train acc 0.9801 | val acc 0.5458 | val loss 1.8864 | 19s
+  [Q1a_MLP_small] epoch  30/30 | train acc 0.9839 | val acc 0.5486 | val loss 1.8956 | 23s
+--- training Q1a_CNN_matched | parameters = 854,094
+  [Q1a_CNN_matched] epoch   1/30 | train acc 0.6503 | val acc 0.6266 | val loss 1.1065 | 28s
+  [Q1a_CNN_matched] epoch   5/30 | train acc 0.8885 | val acc 0.8084 | val loss 0.5901 | 147s
+  [Q1a_CNN_matched] epoch  10/30 | train acc 0.9921 | val acc 0.8486 | val loss 0.5412 | 308s
+  [Q1a_CNN_matched] epoch  15/30 | train acc 1.0000 | val acc 0.8754 | val loss 0.5132 | 471s
+  [Q1a_CNN_matched] epoch  20/30 | train acc 1.0000 | val acc 0.8770 | val loss 0.5393 | 633s
+  [Q1a_CNN_matched] epoch  25/30 | train acc 1.0000 | val acc 0.8772 | val loss 0.5538 | 794s
+  [Q1a_CNN_matched] epoch  30/30 | train acc 1.0000 | val acc 0.8778 | val loss 0.5575 | 956s
+--- training Q1a_MLP_large | parameters = 3,414,538
+  [Q1a_MLP_large] epoch   1/30 | train acc 0.5019 | val acc 0.4688 | val loss 1.4779 | 1s
+  [Q1a_MLP_large] epoch   5/30 | train acc 0.6596 | val acc 0.5302 | val loss 1.3447 | 4s
+  [Q1a_MLP_large] epoch  10/30 | train acc 0.8515 | val acc 0.5620 | val loss 1.4495 | 9s
+  [Q1a_MLP_large] epoch  15/30 | train acc 0.9656 | val acc 0.5610 | val loss 1.8486 | 13s
+  [Q1a_MLP_large] epoch  20/30 | train acc 0.9964 | val acc 0.5684 | val loss 2.1378 | 17s
+  [Q1a_MLP_large] epoch  25/30 | train acc 0.9998 | val acc 0.5748 | val loss 2.3481 | 22s
+  [Q1a_MLP_large] epoch  30/30 | train acc 1.0000 | val acc 0.5694 | val loss 2.3749 | 26s
+
+
+===== Notebook cell 7 =====
+=== Q1(a) comparison table (train/val at best-val epoch, test = final) ===
+                model  params  best_epoch  train_acc  val_acc  test_acc  train_val_gap
+            MLP-small  856074          10     0.7747   0.5622    0.5524         0.2125
+  CNN (param-matched)  854094          22     1.0000   0.8780    0.8716         0.1220
+MLP-large (4x params) 3414538          25     0.9998   0.5748    0.5657         0.4250
+
+4x more parameters improve the MLP by 1.33 points on test.
+A parameter-matched CNN improves it by 31.92 points on test.
+-> capacity alone explains 4% of the CNN's advantage.
+
+
+===== Notebook cell 9 =====
+--- memorisation run, fraction of random labels p = 0.0
+  [p=0.0] epoch   1 | train acc 0.454 | val acc 0.396
+  [p=0.0] epoch  25 | train acc 0.954 | val acc 0.454
+  [p=0.0] epoch  50 | train acc 1.000 | val acc 0.478
+  [p=0.0] epoch  75 | train acc 1.000 | val acc 0.474
+  [p=0.0] epoch 100 | train acc 1.000 | val acc 0.474
+  [p=0.0] epoch 125 | train acc 1.000 | val acc 0.475
+  [p=0.0] epoch 150 | train acc 1.000 | val acc 0.477
+--- memorisation run, fraction of random labels p = 0.5
+  [p=0.5] epoch   1 | train acc 0.268 | val acc 0.342
+  [p=0.5] epoch  25 | train acc 0.997 | val acc 0.297
+  [p=0.5] epoch  50 | train acc 1.000 | val acc 0.297
+  [p=0.5] epoch  75 | train acc 1.000 | val acc 0.299
+  [p=0.5] epoch 100 | train acc 1.000 | val acc 0.298
+  [p=0.5] epoch 125 | train acc 1.000 | val acc 0.300
+  [p=0.5] epoch 150 | train acc 1.000 | val acc 0.297
+--- memorisation run, fraction of random labels p = 1.0
+  [p=1.0] epoch   1 | train acc 0.129 | val acc 0.100
+  [p=1.0] epoch  25 | train acc 0.988 | val acc 0.105
+  [p=1.0] epoch  50 | train acc 1.000 | val acc 0.100
+  [p=1.0] epoch  75 | train acc 0.832 | val acc 0.098
+  [p=1.0] epoch 100 | train acc 1.000 | val acc 0.105
+  [p=1.0] epoch 125 | train acc 1.000 | val acc 0.104
+  [p=1.0] epoch 150 | train acc 1.000 | val acc 0.102
+=== Q1(b) memorisation summary ===
+ p_random_labels  params  peak_val_acc  peak_val_epoch  final_val_acc  memorisation_start_epoch  epoch_train_acc_99  final_train_acc  final_test_acc
+             0.0 4206602        0.4838              55         0.4770                       NaN                  18           1.0000          0.4836
+             0.5 4206602        0.3610               5         0.2972                       6.0                  24           0.9998          0.2982
+             1.0 4206602        0.1392               7         0.1018                       6.0                  34           0.9999          0.1016
+
+
+
+===== Notebook cell 10 =====
+p=0.5: validation accuracy peaked at epoch 5, BEFORE memorisation began (epoch 6) -> structure first, memorisation later.
+p=1.0: validation peak (epoch 7) is not earlier than memorisation start (epoch 6).
+
+
+===== Notebook cell 12 =====
+=== Q2(a) CNN vs MLP ===
+              model  params  best_epoch  train_acc  val_acc  test_acc  train_val_gap            source
+          MLP-small  856074          10     0.7747   0.5622    0.5524         0.2125 reused from Q1(a)
+CNN (param-matched)  854094          22     1.0000   0.8780    0.8716         0.1220 reused from Q1(a)
+
+Parameter ratio CNN/MLP = 0.998 (criterion: within 10%)
+Observed: CNN beats the MLP by 31.92 points at (almost) equal parameters; 4x larger MLP only closes 4% of that gap.
+Proposed reason: The CNN's advantage comes from its spatial inductive bias (local connectivity and weight sharing): it can use which pixels are neighbours, while the MLP cannot.
+
+
+===== Notebook cell 13 =====
+
+EXPECTATION (written before retraining):
+ - MLP: roughly unchanged. A fully connected layer has no notion of neighbourhood, so a fixed pixel permutation
+   only relabels input coordinates (statistically the same problem).
+ - CNN: clearly worse, because its local 3x3 filters now see unrelated pixels and weight sharing is meaningless.
+ - If the part (a) explanation is right, the CNN advantage should shrink strongly or vanish.
+
+
+
+===== Notebook cell 13 =====
+--- training Q2b_MLP_perm | parameters = 856,074
+  [Q2b_MLP_perm] epoch   1/30 | train acc 0.5083 | val acc 0.4718 | val loss 1.4709 | 1s
+  [Q2b_MLP_perm] epoch   5/30 | train acc 0.6417 | val acc 0.5324 | val loss 1.3341 | 4s
+  [Q2b_MLP_perm] epoch  10/30 | train acc 0.7760 | val acc 0.5588 | val loss 1.3746 | 8s
+  [Q2b_MLP_perm] epoch  15/30 | train acc 0.8845 | val acc 0.5468 | val loss 1.5707 | 12s
+  [Q2b_MLP_perm] epoch  20/30 | train acc 0.9529 | val acc 0.5464 | val loss 1.7502 | 15s
+  [Q2b_MLP_perm] epoch  25/30 | train acc 0.9802 | val acc 0.5422 | val loss 1.8977 | 19s
+  [Q2b_MLP_perm] epoch  30/30 | train acc 0.9836 | val acc 0.5426 | val loss 1.9188 | 23s
+--- training Q2b_CNN_perm | parameters = 854,094
+  [Q2b_CNN_perm] epoch   1/30 | train acc 0.3316 | val acc 0.3274 | val loss 1.8141 | 34s
+  [Q2b_CNN_perm] epoch   5/30 | train acc 0.6561 | val acc 0.5336 | val loss 1.3671 | 162s
+  [Q2b_CNN_perm] epoch  10/30 | train acc 0.9702 | val acc 0.5266 | val loss 2.0648 | 324s
+  [Q2b_CNN_perm] epoch  15/30 | train acc 1.0000 | val acc 0.5612 | val loss 2.4349 | 486s
+  [Q2b_CNN_perm] epoch  20/30 | train acc 1.0000 | val acc 0.5630 | val loss 2.5751 | 648s
+  [Q2b_CNN_perm] epoch  25/30 | train acc 1.0000 | val acc 0.5590 | val loss 2.6694 | 810s
+  [Q2b_CNN_perm] epoch  30/30 | train acc 1.0000 | val acc 0.5606 | val loss 2.6850 | 972s
+
+
+===== Notebook cell 14 =====
+=== Q2(b) models trained and tested on pixel-permuted CIFAR10 ===
+               model  params  best_epoch  train_acc  val_acc  test_acc
+MLP-small (permuted)  856074          10      0.776   0.5588    0.5517
+      CNN (permuted)  854094          14      1.000   0.5632    0.5592
+
+MLP: clean 0.5524 -> permuted 0.5517 (change -0.07 points)
+CNN: clean 0.8716 -> permuted 0.5592 (change -31.24 points)
+CNN minus MLP advantage: clean +31.92 points -> permuted +0.75 points
+-> matches the expectation: MLP unaffected, CNN loses most of its advantage. Supports the spatial-structure explanation.
+
+
+===== Notebook cell 16 =====
+Prediction: H2 (structure) -> grayscale-retrained CNN loses only a few points; drops concentrated in colour-cued classes (airplane, ship, frog, deer). H1 (colour) would give a large overall drop.
+--- training Q2c_CNN_gray | parameters = 854,094
+  [Q2c_CNN_gray] epoch   1/30 | train acc 0.6689 | val acc 0.6482 | val loss 1.0075 | 33s
+  [Q2c_CNN_gray] epoch   5/30 | train acc 0.9061 | val acc 0.8092 | val loss 0.5842 | 161s
+  [Q2c_CNN_gray] epoch  10/30 | train acc 0.9958 | val acc 0.8358 | val loss 0.6174 | 323s
+  [Q2c_CNN_gray] epoch  15/30 | train acc 1.0000 | val acc 0.8496 | val loss 0.6128 | 484s
+  [Q2c_CNN_gray] epoch  20/30 | train acc 1.0000 | val acc 0.8480 | val loss 0.6525 | 646s
+  [Q2c_CNN_gray] epoch  25/30 | train acc 1.0000 | val acc 0.8496 | val loss 0.6729 | 808s
+  [Q2c_CNN_gray] epoch  30/30 | train acc 1.0000 | val acc 0.8490 | val loss 0.6799 | 969s
+--- training Q2c_MLP_gray | parameters = 856,074
+  [Q2c_MLP_gray] epoch   1/30 | train acc 0.4174 | val acc 0.4010 | val loss 1.6978 | 1s
+  [Q2c_MLP_gray] epoch   5/30 | train acc 0.5408 | val acc 0.4458 | val loss 1.5658 | 4s
+  [Q2c_MLP_gray] epoch  10/30 | train acc 0.6698 | val acc 0.4744 | val loss 1.5837 | 7s
+  [Q2c_MLP_gray] epoch  15/30 | train acc 0.7810 | val acc 0.4688 | val loss 1.7260 | 11s
+  [Q2c_MLP_gray] epoch  20/30 | train acc 0.8720 | val acc 0.4720 | val loss 1.8989 | 15s
+  [Q2c_MLP_gray] epoch  25/30 | train acc 0.9158 | val acc 0.4576 | val loss 2.0269 | 19s
+  [Q2c_MLP_gray] epoch  30/30 | train acc 0.9247 | val acc 0.4624 | val loss 2.0470 | 22s
+=== Q2(c) grayscale experiment: accuracy and confidence (test set) ===
+                                      condition  test_acc  mean_conf  conf_when_correct  conf_when_wrong    ECE
+              CNN trained colour, tested colour    0.8716     0.9502             0.9699           0.8166 0.0788
+CNN trained colour, tested gray (no retraining)    0.8080     0.9275             0.9587           0.7963 0.1195
+                  CNN trained gray, tested gray    0.8391     0.9335             0.9627           0.7810 0.0944
+              MLP trained colour, tested colour    0.5524     0.6731             0.7551           0.5720 0.1207
+                  MLP trained gray, tested gray    0.4610     0.6128             0.6994           0.5387 0.1518
+
+=== Q2(c) per-class CNN accuracy ===
+     class  colour  gray_noretrain  gray_retrained  drop_retrained
+  airplane   0.891           0.852           0.883           0.008
+automobile   0.934           0.923           0.930           0.004
+      bird   0.797           0.680           0.736           0.061
+       cat   0.741           0.770           0.666           0.075
+      deer   0.881           0.723           0.813           0.068
+       dog   0.813           0.732           0.777           0.036
+      frog   0.912           0.801           0.895           0.017
+     horse   0.905           0.822           0.887           0.018
+      ship   0.921           0.901           0.892           0.029
+     truck   0.921           0.876           0.912           0.009
+
+Of images the colour CNN got right, 8.0% become wrong in the gray CNN; of images it got wrong, 29.3% become right.
+Overall: colour CNN 0.8716 -> gray-retrained CNN 0.8391 (drop 3.25 points)
+Biggest per-class drops: [['cat', 0.075], ['deer', 0.068], ['bird', 0.061]]
+
+
+===== Notebook cell 16 =====
+
+LINKING NUMBERS: (a) CNN-MLP gap on clean data +31.92 points | (b) same gap on pixel-permuted data +0.75 points | (c) CNN drop when colour is removed 3.25 points.
+
+
+===== Notebook cell 18 =====
+--- training clean AE with bottleneck d = 32 | parameters = 464,227
+  [AE_d32] epoch   1/30 | train mse 0.02935 | val mse 0.01840 | 3s
+  [AE_d32] epoch   5/30 | train mse 0.01260 | val mse 0.01255 | 13s
+  [AE_d32] epoch  10/30 | train mse 0.01178 | val mse 0.01235 | 26s
+  [AE_d32] epoch  15/30 | train mse 0.01153 | val mse 0.01161 | 38s
+  [AE_d32] epoch  20/30 | train mse 0.01138 | val mse 0.01157 | 51s
+  [AE_d32] epoch  25/30 | train mse 0.01124 | val mse 0.01148 | 63s
+  [AE_d32] epoch  30/30 | train mse 0.01114 | val mse 0.01150 | 75s
+--- training clean AE with bottleneck d = 128 | parameters = 857,539
+  [AE_d128] epoch   1/30 | train mse 0.02411 | val mse 0.01404 | 3s
+  [AE_d128] epoch   5/30 | train mse 0.00790 | val mse 0.00843 | 13s
+  [AE_d128] epoch  10/30 | train mse 0.00585 | val mse 0.00581 | 26s
+  [AE_d128] epoch  15/30 | train mse 0.00517 | val mse 0.00524 | 39s
+  [AE_d128] epoch  20/30 | train mse 0.00493 | val mse 0.00505 | 52s
+  [AE_d128] epoch  25/30 | train mse 0.00483 | val mse 0.00486 | 65s
+  [AE_d128] epoch  30/30 | train mse 0.00474 | val mse 0.00486 | 78s
+--- training clean AE with bottleneck d = 512 | parameters = 2,430,787
+  [AE_d512] epoch   1/30 | train mse 0.02445 | val mse 0.01364 | 3s
+  [AE_d512] epoch   5/30 | train mse 0.00660 | val mse 0.00639 | 14s
+  [AE_d512] epoch  10/30 | train mse 0.00430 | val mse 0.00422 | 29s
+  [AE_d512] epoch  15/30 | train mse 0.00338 | val mse 0.00325 | 43s
+  [AE_d512] epoch  20/30 | train mse 0.00285 | val mse 0.00295 | 58s
+  [AE_d512] epoch  25/30 | train mse 0.00248 | val mse 0.00252 | 72s
+  [AE_d512] epoch  30/30 | train mse 0.00222 | val mse 0.00219 | 87s
+=== Q3(a) autoencoders (validation reconstruction error) ===
+ bottleneck_d  compression  total_params  encoder_params  best_epoch  val_mse  val_psnr_db
+           32         96.0        464227          231168          26 0.011472        19.40
+          128         24.0        857539          427872          29 0.004827        23.16
+          512          6.0       2430787         1214688          30 0.002194        26.59
+
+SELECTED clean AE (lowest validation MSE): d = 512
+Test reconstruction MSE of selected clean AE: 0.002202 (PSNR 26.57 dB)
+
+
+===== Notebook cell 20 =====
+--- training DENOISING AE (d = 512), gaussian noise sigma = 0.20, no labels
+  [DAE] epoch   1/30 | train mse 0.02425 | val mse 0.01488 | 3s
+  [DAE] epoch   5/30 | train mse 0.00827 | val mse 0.00786 | 14s
+  [DAE] epoch  10/30 | train mse 0.00638 | val mse 0.00629 | 29s
+  [DAE] epoch  15/30 | train mse 0.00565 | val mse 0.00562 | 43s
+  [DAE] epoch  20/30 | train mse 0.00522 | val mse 0.00525 | 58s
+  [DAE] epoch  25/30 | train mse 0.00498 | val mse 0.00497 | 72s
+  [DAE] epoch  30/30 | train mse 0.00477 | val mse 0.00488 | 87s
+=== Q3(b) fixed CNN (from Q1a) on corrupted images and on reconstructions ===
+                                           classifier input  cnn_test_acc  mse_vs_clean
+                              clean test images (reference)        0.8716      0.000000
+                                      corrupted test images        0.1496      0.033316
+                       clean-AE reconstruction of corrupted        0.4080      0.006854
+                            DAE reconstruction of corrupted        0.4381      0.004855
+clean-AE reconstruction of clean (AE information loss only)        0.6076      0.002202
+                                DAE reconstruction of clean        0.4633      0.004419
+
+Corruption costs the classifier 72.20 points. The DAE recovers 40% of that loss (clean AE: 36%).
+Remaining gap to clean-image accuracy after denoising: 43.35 points.
+
+
+===== Notebook cell 22 =====
+  probe done: clean AE d=32 {'train_acc': 0.3644, 'val_acc': 0.3566, 'test_acc': 0.3609, 'weight_decay': 0.0}
+  probe done: clean AE d=128 {'train_acc': 0.4024, 'val_acc': 0.3934, 'test_acc': 0.3934, 'weight_decay': 0.001}
+  probe done: clean AE d=512 {'train_acc': 0.4649, 'val_acc': 0.4502, 'test_acc': 0.4442, 'weight_decay': 0.0}
+  probe done: denoising AE d=512 {'train_acc': 0.5112, 'val_acc': 0.483, 'test_acc': 0.4947, 'weight_decay': 0.0}
+  probe done: random untrained encoder d=512 {'train_acc': 0.4596, 'val_acc': 0.434, 'test_acc': 0.431, 'weight_decay': 0.0}
+=== Q3(c) reconstruction quality vs class information (linear probe) ===
+                representation  dim  encoder_params  test_recon_mse  train_acc  val_acc  test_acc  weight_decay
+                 clean AE d=32   32          231168        0.011504     0.3644   0.3566    0.3609         0.000
+                clean AE d=128  128          427872        0.004829     0.4024   0.3934    0.3934         0.001
+                clean AE d=512  512         1214688        0.002202     0.4649   0.4502    0.4442         0.000
+            denoising AE d=512  512         1214688        0.004419     0.5112   0.4830    0.4947         0.000
+random untrained encoder d=512  512         1214688             NaN     0.4596   0.4340    0.4310         0.000
+             raw pixels (3072) 3072               0        0.000000     0.3858   0.3230    0.3306         0.001
+
+Ranking by reconstruction (best first): ['clean AE d=512', 'clean AE d=128', 'clean AE d=32']
+Ranking by class information (best first): ['clean AE d=512', 'clean AE d=128', 'clean AE d=32']
+Rankings agree.
+  clean AE d=32 -> clean AE d=128: reconstruction MSE x0.42, probe test acc +3.25 points
+  clean AE d=128 -> clean AE d=512: reconstruction MSE x0.46, probe test acc +5.08 points
+Denoising AE vs clean AE at the same d: recon MSE (clean test) 0.004419 vs 0.002202 | probe test acc 0.4947 vs 0.4442
+Representation fixed for Q4: clean AE bottleneck, d = 512 (best validation probe accuracy among clean AEs)
+
+
+===== Notebook cell 24 =====
+Q4 representation dim = 512 | SVM training subset = 6000 images ([600, 600, 600, 600, 600, 600, 600, 600, 600, 600] per class)
+   {'kernel': 'linear', 'C': 0.01, 'train_acc': 0.632, 'val_acc': 0.3956, 'sv_frac': np.float64(0.8992), 'converged': True, 'fit_seconds': 18.5}
+   {'kernel': 'linear', 'C': 0.1, 'train_acc': 0.743, 'val_acc': 0.365, 'sv_frac': np.float64(0.862), 'converged': True, 'fit_seconds': 26.6}
+   {'kernel': 'linear', 'C': 1, 'train_acc': 0.8498, 'val_acc': 0.3554, 'sv_frac': np.float64(0.8465), 'converged': False, 'fit_seconds': 42.8}
+   {'kernel': 'linear', 'C': 10, 'train_acc': 0.883, 'val_acc': 0.3466, 'sv_frac': np.float64(0.9075), 'converged': False, 'fit_seconds': 51.7}
+   {'kernel': 'linear', 'C': 100, 'train_acc': 0.8142, 'val_acc': 0.3402, 'sv_frac': np.float64(0.9223), 'converged': False, 'fit_seconds': 52.4}
+   {'kernel': 'poly3', 'C': 0.01, 'train_acc': 0.2998, 'val_acc': 0.19, 'sv_frac': np.float64(1.0), 'converged': True, 'fit_seconds': 25.8}
+   {'kernel': 'poly3', 'C': 0.1, 'train_acc': 0.3038, 'val_acc': 0.1674, 'sv_frac': np.float64(0.9992), 'converged': True, 'fit_seconds': 26.0}
+   {'kernel': 'poly3', 'C': 1, 'train_acc': 0.7718, 'val_acc': 0.2936, 'sv_frac': np.float64(0.9882), 'converged': True, 'fit_seconds': 24.9}
+   {'kernel': 'poly3', 'C': 10, 'train_acc': 0.9855, 'val_acc': 0.37, 'sv_frac': np.float64(0.9752), 'converged': True, 'fit_seconds': 25.8}
+   {'kernel': 'poly3', 'C': 100, 'train_acc': 1.0, 'val_acc': 0.37, 'sv_frac': np.float64(0.9755), 'converged': True, 'fit_seconds': 25.5}
+   {'kernel': 'rbf', 'C': 0.01, 'train_acc': 0.3382, 'val_acc': 0.291, 'sv_frac': np.float64(1.0), 'converged': True, 'fit_seconds': 46.3}
+   {'kernel': 'rbf', 'C': 0.1, 'train_acc': 0.4383, 'val_acc': 0.3572, 'sv_frac': np.float64(0.9957), 'converged': True, 'fit_seconds': 45.9}
+   {'kernel': 'rbf', 'C': 1, 'train_acc': 0.845, 'val_acc': 0.4688, 'sv_frac': np.float64(0.9703), 'converged': True, 'fit_seconds': 42.0}
+   {'kernel': 'rbf', 'C': 10, 'train_acc': 0.9987, 'val_acc': 0.4754, 'sv_frac': np.float64(0.9793), 'converged': True, 'fit_seconds': 44.1}
+   {'kernel': 'rbf', 'C': 100, 'train_acc': 1.0, 'val_acc': 0.4734, 'sv_frac': np.float64(0.9795), 'converged': True, 'fit_seconds': 43.5}
+=== Q4(a) complete C and kernel sweep (selection uses validation only) ===
+kernel      C  train_acc  val_acc  sv_frac  converged  fit_seconds
+linear   0.01     0.6320   0.3956   0.8992       True         18.5
+linear   0.10     0.7430   0.3650   0.8620       True         26.6
+linear   1.00     0.8498   0.3554   0.8465      False         42.8
+linear  10.00     0.8830   0.3466   0.9075      False         51.7
+linear 100.00     0.8142   0.3402   0.9223      False         52.4
+ poly3   0.01     0.2998   0.1900   1.0000       True         25.8
+ poly3   0.10     0.3038   0.1674   0.9992       True         26.0
+ poly3   1.00     0.7718   0.2936   0.9882       True         24.9
+ poly3  10.00     0.9855   0.3700   0.9752       True         25.8
+ poly3 100.00     1.0000   0.3700   0.9755       True         25.5
+   rbf   0.01     0.3382   0.2910   1.0000       True         46.3
+   rbf   0.10     0.4383   0.3572   0.9957       True         45.9
+   rbf   1.00     0.8450   0.4688   0.9703       True         42.0
+   rbf  10.00     0.9987   0.4754   0.9793       True         44.1
+   rbf 100.00     1.0000   0.4734   0.9795       True         43.5
+
+
+
+===== Notebook cell 25 =====
+SELECTED by validation only: kernel = rbf, C = 10.0 (val acc 0.4754, train acc 0.9987, SV fraction 0.979)
+FINAL TEST ACCURACY of the selected SVM: 0.4720
+  linear | smallest C: train 0.632 val 0.396 SV 0.90 | largest C: train 0.814 val 0.340 SV 0.92 | max train-val gap 0.536
+  poly3  | smallest C: train 0.300 val 0.190 SV 1.00 | largest C: train 1.000 val 0.370 SV 0.98 | max train-val gap 0.630
+  rbf    | smallest C: train 0.338 val 0.291 SV 1.00 | largest C: train 1.000 val 0.473 SV 0.98 | max train-val gap 0.527
+
+
+===== Notebook cell 26 =====
+Three most confused class pairs on the test set: [('cat', 'dog', np.float64(0.208)), ('automobile', 'truck', np.float64(0.18)), ('bird', 'deer', np.float64(0.152))]
+
+
+===== Notebook cell 26 =====
+=== Q4(b) difficult pairs: SVM scores, support vectors and geometry ===
+               pair  multiclass_confusion_rate  errors_a_to_b  errors_b_to_a  binary_pair_error_rate  mean_abs_score_correct  mean_abs_score_wrong  pair_support_vectors  bounded_sv_fraction  centroid_dist_over_radius  errors_nearer_other_centroid
+         cat vs dog                      0.208            187            229                   0.380                   0.416                 0.325                  1166                0.003                      0.098                         0.584
+automobile vs truck                      0.180            167            192                   0.252                   0.490                 0.281                  1120                0.000                      0.163                         0.705
+       bird vs deer                      0.152            132            171                   0.339                   0.616                 0.413                  1033                0.031                      0.110                         0.584
+
+Over all 45 pairs: Spearman correlation between (centroid distance / class spread) and test confusion rate = -0.829 (p = 2.06e-12)
+Median centroid-distance/spread over all pairs = 0.257
+
+
+===== Notebook cell 27 =====
+   {'method': 'kmeans', 'k': 5, 'train_silhouette': np.float32(0.0009), 'val_silhouette': np.float32(0.0027), 'val_davies_bouldin': np.float64(4.5), 'seconds': 10.1}
+   {'method': 'kmeans', 'k': 8, 'train_silhouette': np.float32(-0.0011), 'val_silhouette': np.float32(0.0), 'val_davies_bouldin': np.float64(4.462), 'seconds': 22.3}
+   {'method': 'kmeans', 'k': 10, 'train_silhouette': np.float32(-0.0068), 'val_silhouette': np.float32(-0.0038), 'val_davies_bouldin': np.float64(4.306), 'seconds': 14.0}
+   {'method': 'kmeans', 'k': 12, 'train_silhouette': np.float32(-0.0096), 'val_silhouette': np.float32(-0.0039), 'val_davies_bouldin': np.float64(4.312), 'seconds': 12.6}
+   {'method': 'kmeans', 'k': 15, 'train_silhouette': np.float32(-0.0268), 'val_silhouette': np.float32(-0.0254), 'val_davies_bouldin': np.float64(4.345), 'seconds': 17.4}
+   {'method': 'kmeans', 'k': 20, 'train_silhouette': np.float32(-0.0375), 'val_silhouette': np.float32(-0.0375), 'val_davies_bouldin': np.float64(4.323), 'seconds': 19.4}
+   {'method': 'gmm_diag', 'k': 5, 'train_silhouette': np.float32(-0.0825), 'val_silhouette': np.float32(-0.0832), 'val_davies_bouldin': np.float64(7.67), 'seconds': 31.8}
+   {'method': 'gmm_diag', 'k': 8, 'train_silhouette': np.float32(-0.0964), 'val_silhouette': np.float32(-0.0977), 'val_davies_bouldin': np.float64(6.446), 'seconds': 44.1}
+   {'method': 'gmm_diag', 'k': 10, 'train_silhouette': np.float32(-0.1119), 'val_silhouette': np.float32(-0.1135), 'val_davies_bouldin': np.float64(6.907), 'seconds': 70.3}
+   {'method': 'gmm_diag', 'k': 12, 'train_silhouette': np.float32(-0.1154), 'val_silhouette': np.float32(-0.1181), 'val_davies_bouldin': np.float64(6.635), 'seconds': 53.7}
+   {'method': 'gmm_diag', 'k': 15, 'train_silhouette': np.float32(-0.1098), 'val_silhouette': np.float32(-0.1126), 'val_davies_bouldin': np.float64(6.587), 'seconds': 59.4}
+   {'method': 'gmm_diag', 'k': 20, 'train_silhouette': np.float32(-0.1208), 'val_silhouette': np.float32(-0.1234), 'val_davies_bouldin': np.float64(5.983), 'seconds': 58.3}
+=== Q4(c) clustering model selection (label-free: validation silhouette) ===
+  method  k  train_silhouette  val_silhouette  val_davies_bouldin  seconds
+  kmeans  5            0.0009          0.0027               4.500     10.1
+  kmeans  8           -0.0011          0.0000               4.462     22.3
+  kmeans 10           -0.0068         -0.0038               4.306     14.0
+  kmeans 12           -0.0096         -0.0039               4.312     12.6
+  kmeans 15           -0.0268         -0.0254               4.345     17.4
+  kmeans 20           -0.0375         -0.0375               4.323     19.4
+gmm_diag  5           -0.0825         -0.0832               7.670     31.8
+gmm_diag  8           -0.0964         -0.0977               6.446     44.1
+gmm_diag 10           -0.1119         -0.1135               6.907     70.3
+gmm_diag 12           -0.1154         -0.1181               6.635     53.7
+gmm_diag 15           -0.1098         -0.1126               6.587     59.4
+gmm_diag 20           -0.1208         -0.1234               5.983     58.3
+
+SELECTED clustering (validation silhouette only): kmeans with k = 5
+TEST ARI = 0.0583 | TEST NMI = 0.0932
+Reference (not used for selection): KMeans k=10 -> ARI 0.0695, NMI 0.1215
+=== Q4(c) test cluster-to-class contingency table (rows = clusters) ===
+ cluster  airplane  automobile  bird  cat  deer  dog  frog  horse  ship  truck
+       0       212         288    82   95    79   57    51    247   447    523
+       1       278         240   115  191    80  323    85    138   392    137
+       2       348         143   167  184    79  131   116    162    58    160
+       3        82         102   443  251   521  281   525    288    27     72
+       4        80         227   193  279   241  208   223    165    76    108
+
+
+
+===== Notebook cell 27 =====
+=== Q4(c) per-class SVM recall vs cluster-majority recall ===
+     class  svm_recall  cluster_majority_recall  svm_minus_cluster
+  airplane       0.541                    0.348              0.193
+automobile       0.608                    0.000              0.608
+      bird       0.341                    0.000              0.341
+       cat       0.337                    0.279              0.058
+      deer       0.354                    0.000              0.354
+       dog       0.377                    0.000              0.377
+      frog       0.503                    0.525             -0.022
+     horse       0.510                    0.000              0.510
+      ship       0.596                    0.392              0.204
+     truck       0.553                    0.523              0.030
+
+Spearman correlation over all 45 pairs between SVM confusion rate and cluster overlap = 0.762 (p = 1.22e-09)
+=== Q4(c) pairs the clustering merges but the SVM separates ===
+               pair  svm_confusion_rate  cluster_overlap_cosine  gap_clusterRank_minus_svmRank
+automobile vs horse               0.029                   0.884                          0.500
+      horse vs ship               0.014                   0.693                          0.333
+      bird vs horse               0.062                   0.902                          0.300
+
+=== Q4(c) pairs the SVM confuses but the clustering separates ===
+            pair  svm_confusion_rate  cluster_overlap_cosine  gap_clusterRank_minus_svmRank
+airplane vs bird               0.082                   0.593                         -0.467
+airplane vs ship               0.127                   0.761                         -0.467
+airplane vs deer               0.037                   0.430                         -0.356
+
+
+
+===== Notebook cell 29 =====
+ML Assignment 3 - roll M26CSA008 - seed 26008
+
+=== Q1(a) comparison table (train/val at best-val epoch, test = final) ===
+                model  params  best_epoch  train_acc  val_acc  test_acc  train_val_gap
+            MLP-small  856074          10     0.7747   0.5622    0.5524         0.2125
+  CNN (param-matched)  854094          22     1.0000   0.8780    0.8716         0.1220
+MLP-large (4x params) 3414538          25     0.9998   0.5748    0.5657         0.4250
+
+=== Q1(b) memorisation summary ===
+ p_random_labels  params  peak_val_acc  peak_val_epoch  final_val_acc  memorisation_start_epoch  epoch_train_acc_99  final_train_acc  final_test_acc
+             0.0 4206602        0.4838              55         0.4770                       NaN                  18           1.0000          0.4836
+             0.5 4206602        0.3610               5         0.2972                       6.0                  24           0.9998          0.2982
+             1.0 4206602        0.1392               7         0.1018                       6.0                  34           0.9999          0.1016
+
+=== Q2(a) CNN vs MLP ===
+              model  params  best_epoch  train_acc  val_acc  test_acc  train_val_gap            source
+          MLP-small  856074          10     0.7747   0.5622    0.5524         0.2125 reused from Q1(a)
+CNN (param-matched)  854094          22     1.0000   0.8780    0.8716         0.1220 reused from Q1(a)
+
+=== Q2(b) models trained and tested on pixel-permuted CIFAR10 ===
+               model  params  best_epoch  train_acc  val_acc  test_acc
+MLP-small (permuted)  856074          10      0.776   0.5588    0.5517
+      CNN (permuted)  854094          14      1.000   0.5632    0.5592
+
+=== Q2(c) grayscale experiment: accuracy and confidence (test set) ===
+                                      condition  test_acc  mean_conf  conf_when_correct  conf_when_wrong    ECE
+              CNN trained colour, tested colour    0.8716     0.9502             0.9699           0.8166 0.0788
+CNN trained colour, tested gray (no retraining)    0.8080     0.9275             0.9587           0.7963 0.1195
+                  CNN trained gray, tested gray    0.8391     0.9335             0.9627           0.7810 0.0944
+              MLP trained colour, tested colour    0.5524     0.6731             0.7551           0.5720 0.1207
+                  MLP trained gray, tested gray    0.4610     0.6128             0.6994           0.5387 0.1518
+
+=== Q2(c) per-class CNN accuracy ===
+     class  colour  gray_noretrain  gray_retrained  drop_retrained
+  airplane   0.891           0.852           0.883           0.008
+automobile   0.934           0.923           0.930           0.004
+      bird   0.797           0.680           0.736           0.061
+       cat   0.741           0.770           0.666           0.075
+      deer   0.881           0.723           0.813           0.068
+       dog   0.813           0.732           0.777           0.036
+      frog   0.912           0.801           0.895           0.017
+     horse   0.905           0.822           0.887           0.018
+      ship   0.921           0.901           0.892           0.029
+     truck   0.921           0.876           0.912           0.009
+
+=== Q3(a) autoencoders (validation reconstruction error) ===
+ bottleneck_d  compression  total_params  encoder_params  best_epoch  val_mse  val_psnr_db
+           32         96.0        464227          231168          26 0.011472        19.40
+          128         24.0        857539          427872          29 0.004827        23.16
+          512          6.0       2430787         1214688          30 0.002194        26.59
+
+=== Q3(b) fixed CNN (from Q1a) on corrupted images and on reconstructions ===
+                                           classifier input  cnn_test_acc  mse_vs_clean
+                              clean test images (reference)        0.8716      0.000000
+                                      corrupted test images        0.1496      0.033316
+                       clean-AE reconstruction of corrupted        0.4080      0.006854
+                            DAE reconstruction of corrupted        0.4381      0.004855
+clean-AE reconstruction of clean (AE information loss only)        0.6076      0.002202
+                                DAE reconstruction of clean        0.4633      0.004419
+
+=== Q3(c) reconstruction quality vs class information (linear probe) ===
+                representation  dim  encoder_params  test_recon_mse  train_acc  val_acc  test_acc  weight_decay
+                 clean AE d=32   32          231168        0.011504     0.3644   0.3566    0.3609         0.000
+                clean AE d=128  128          427872        0.004829     0.4024   0.3934    0.3934         0.001
+                clean AE d=512  512         1214688        0.002202     0.4649   0.4502    0.4442         0.000
+            denoising AE d=512  512         1214688        0.004419     0.5112   0.4830    0.4947         0.000
+random untrained encoder d=512  512         1214688             NaN     0.4596   0.4340    0.4310         0.000
+             raw pixels (3072) 3072               0        0.000000     0.3858   0.3230    0.3306         0.001
+
+=== Q4(a) complete C and kernel sweep (selection uses validation only) ===
+kernel      C  train_acc  val_acc  sv_frac  converged  fit_seconds
+linear   0.01     0.6320   0.3956   0.8992       True         18.5
+linear   0.10     0.7430   0.3650   0.8620       True         26.6
+linear   1.00     0.8498   0.3554   0.8465      False         42.8
+linear  10.00     0.8830   0.3466   0.9075      False         51.7
+linear 100.00     0.8142   0.3402   0.9223      False         52.4
+ poly3   0.01     0.2998   0.1900   1.0000       True         25.8
+ poly3   0.10     0.3038   0.1674   0.9992       True         26.0
+ poly3   1.00     0.7718   0.2936   0.9882       True         24.9
+ poly3  10.00     0.9855   0.3700   0.9752       True         25.8
+ poly3 100.00     1.0000   0.3700   0.9755       True         25.5
+   rbf   0.01     0.3382   0.2910   1.0000       True         46.3
+   rbf   0.10     0.4383   0.3572   0.9957       True         45.9
+   rbf   1.00     0.8450   0.4688   0.9703       True         42.0
+   rbf  10.00     0.9987   0.4754   0.9793       True         44.1
+   rbf 100.00     1.0000   0.4734   0.9795       True         43.5
+
+=== Q4(b) difficult pairs: SVM scores, support vectors and geometry ===
+               pair  multiclass_confusion_rate  errors_a_to_b  errors_b_to_a  binary_pair_error_rate  mean_abs_score_correct  mean_abs_score_wrong  pair_support_vectors  bounded_sv_fraction  centroid_dist_over_radius  errors_nearer_other_centroid
+         cat vs dog                      0.208            187            229                   0.380                   0.416                 0.325                  1166                0.003                      0.098                         0.584
+automobile vs truck                      0.180            167            192                   0.252                   0.490                 0.281                  1120                0.000                      0.163                         0.705
+       bird vs deer                      0.152            132            171                   0.339                   0.616                 0.413                  1033                0.031                      0.110                         0.584
+
+=== Q4(c) clustering model selection (label-free: validation silhouette) ===
+  method  k  train_silhouette  val_silhouette  val_davies_bouldin  seconds
+  kmeans  5            0.0009          0.0027               4.500     10.1
+  kmeans  8           -0.0011          0.0000               4.462     22.3
+  kmeans 10           -0.0068         -0.0038               4.306     14.0
+  kmeans 12           -0.0096         -0.0039               4.312     12.6
+  kmeans 15           -0.0268         -0.0254               4.345     17.4
+  kmeans 20           -0.0375         -0.0375               4.323     19.4
+gmm_diag  5           -0.0825         -0.0832               7.670     31.8
+gmm_diag  8           -0.0964         -0.0977               6.446     44.1
+gmm_diag 10           -0.1119         -0.1135               6.907     70.3
+gmm_diag 12           -0.1154         -0.1181               6.635     53.7
+gmm_diag 15           -0.1098         -0.1126               6.587     59.4
+gmm_diag 20           -0.1208         -0.1234               5.983     58.3
+
+=== Q4(c) test cluster-to-class contingency table (rows = clusters) ===
+ cluster  airplane  automobile  bird  cat  deer  dog  frog  horse  ship  truck
+       0       212         288    82   95    79   57    51    247   447    523
+       1       278         240   115  191    80  323    85    138   392    137
+       2       348         143   167  184    79  131   116    162    58    160
+       3        82         102   443  251   521  281   525    288    27     72
+       4        80         227   193  279   241  208   223    165    76    108
+
+=== Q4(c) per-class SVM recall vs cluster-majority recall ===
+     class  svm_recall  cluster_majority_recall  svm_minus_cluster
+  airplane       0.541                    0.348              0.193
+automobile       0.608                    0.000              0.608
+      bird       0.341                    0.000              0.341
+       cat       0.337                    0.279              0.058
+      deer       0.354                    0.000              0.354
+       dog       0.377                    0.000              0.377
+      frog       0.503                    0.525             -0.022
+     horse       0.510                    0.000              0.510
+      ship       0.596                    0.392              0.204
+     truck       0.553                    0.523              0.030
+
+=== Q4(c) pairs the clustering merges but the SVM separates ===
+               pair  svm_confusion_rate  cluster_overlap_cosine  gap_clusterRank_minus_svmRank
+automobile vs horse               0.029                   0.884                          0.500
+      horse vs ship               0.014                   0.693                          0.333
+      bird vs horse               0.062                   0.902                          0.300
+
+=== Q4(c) pairs the SVM confuses but the clustering separates ===
+            pair  svm_confusion_rate  cluster_overlap_cosine  gap_clusterRank_minus_svmRank
+airplane vs bird               0.082                   0.593                         -0.467
+airplane vs ship               0.127                   0.761                         -0.467
+airplane vs deer               0.037                   0.430                         -0.356
+
+Wrote results/results_summary.txt, requirements.txt, README.md
+Done. Download these folders/files: figures/, results/, logs/, requirements.txt, README.md, ML_Assignment3.ipynb
+
+
+===== Notebook cell 30 =====
+p=0.5: accuracy on random-labelled images w.r.t. their TRUE label peaks at 0.368 in epoch 3; memorisation overtakes it in epoch 7; validation peaks at 0.361 in epoch 5 and ends at 0.297.
+p=1.0: accuracy on random-labelled images w.r.t. their TRUE label peaks at 0.143 in epoch 7; memorisation overtakes it in epoch 1; validation peaks at 0.139 in epoch 7 and ends at 0.102.
